@@ -1,0 +1,66 @@
+df= spark.read.format("json").option("multiline","true").load('/Volumes/workspace/default/lpvolume/sample_nested_1000_records.json')
+
+from pyspark.sql.functions import col, explode
+df_exploded_orders = df.withColumn("order",explode(col("orders")))
+df_exploded_items = df_exploded_orders.withColumn("items",explode(col("order.items")))
+
+df_flat=df_exploded_items.select(
+    col("user_id"),
+    col("name"),
+    col("email"),
+    col("created_at"),
+    col("address.street").alias("street"),
+    col("address.city").alias("city"),
+col("address.state").alias("state"),
+col("address.zip").alias("zipcode"),
+col("order.order_id").alias("order_id"),
+col("order.amount").alias("order_amount"),
+col("items.product_id").alias("product_id"),
+col("items.quantity").alias("quantity")
+)
+
+display(df_flat)
+
+root
+ |-- user_id: long
+ |-- name: string
+ |-- email: string
+ |-- created_at: string
+ |-- address: struct
+ |    |-- street: string
+ |    |-- city: string
+ |    |-- state: string
+ |    |-- zip: string
+ |-- orders: array
+ |    |-- element: struct
+ |        |-- order_id: string
+ |        |-- amount: double
+ |        |-- items: array
+ |            |-- element: struct
+ |                |-- product_id: string
+ |                |-- quantity: long
+
+
+
+
+from pyspark.sql.types import (
+    StructType, StructField,
+    StringType, IntegerType, BooleanType
+)
+
+schema = StructType([
+    StructField("id", IntegerType(), True),
+    StructField("name", StringType(), True),
+    StructField("city", StringType(), True),
+    StructField("is_active", BooleanType(), True)
+])
+
+df = spark.createDataFrame([], schema)
+
+df.printSchema()
+
+data = [(1, "John", "Mumbai", True)]
+
+df1 = spark.createDataFrame(data, schema)
+
+df1.show()
